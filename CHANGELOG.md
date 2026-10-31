@@ -2,6 +2,14 @@
 
 All notable changes to Carry-on. Newest first.
 
+## [1.50.0] - 2026-10-31
+
+### Added
+- Comics and manga have Auto-scroll where Narrate was: the page moves by
+  itself, a finger on it holds it, and lifting lets it go on. The Aa tab
+  shows only Speed (its own, apart from Narrate's), Go on to the next clip
+  (the next chapter starts scrolling at the end) and Keep the screen on.
+
 ## [1.49.0] - 2026-10-31
 
 ### Added
