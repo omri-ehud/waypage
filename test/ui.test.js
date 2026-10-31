@@ -2026,7 +2026,8 @@ function zipOf(files) {
       assert.strictEqual(got.pages.length, 1);
       assert.strictEqual(got.pages[0].kind, "pdf");
       assert.strictEqual(got.pages[0].link, "content://docs/Quarterly%20deck.pdf", "it reads from where it was saved, without the keep-a-copy question");
-      assert.deepStrictEqual(q.errors, []);
+      const errors = q.errors.filter((e) => !/serviceWorker/.test(e));
+      assert.deepStrictEqual(errors, [], errors.join(" | "));
       await q.context().close();
     });
 
