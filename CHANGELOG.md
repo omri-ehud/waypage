@@ -2,6 +2,13 @@
 
 All notable changes to Carry-on. Newest first.
 
+## [1.50.1] - 2026-10-31
+
+### Fixed
+- The top bar stays on while a comic auto-scrolls, so its button can always
+  stop it. Before, the page's own scrolling hid the bar a moment after it
+  came back.
+
 ## [1.50.0] - 2026-10-31
 
 ### Added

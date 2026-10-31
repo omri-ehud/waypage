@@ -737,6 +737,7 @@ body.aloud-bar-up .library, body.aloud-bar-up .screen-body { padding-bottom: cal
 /* Reading on down: the bar slides up out of the way, back on a scroll up
    or when anything in it takes focus. The status bar's strip stays. */
 .reader.bar-away .reader-bar:not(:focus-within) { transform: translateY(-100%); }
+.reader.gliding .reader-bar:not(:focus-within) { transform: none; }
 html.native .reader::before {
   content: ""; position: absolute; top: 0; left: 0; right: 0; z-index: 4;
   height: env(safe-area-inset-top); background: var(--bar);

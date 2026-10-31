@@ -18,6 +18,15 @@ Moved here from TODO.md (11 Oct 2026), which now lists only open work.
 
 ## Entries
 
+**The top bar stays on while auto-scrolling (1.50.1).** 1.50.0 hid the
+bar when auto-scroll started and, worse, readerScrolled() hid it again on
+the first 12 px of any scroll, auto-scroll's own included, so it vanished
+a moment after a tap brought it back, with Stop in it. A `gliding` class on
+the reader (set in startGlide, cleared in stopGlide and glideEnded) now
+pins `.reader-bar` with a rule that beats the bar-away one's specificity
+(it carries `:not(:focus-within)`, so a plain `.reader.gliding .reader-bar`
+lost). bar-away still moves the bottom bar as before.
+
 **Auto-scroll for comics (1.50.0).** A comic has no text, so Narrate's
 button became Auto-scroll (`#readerScroll`, same S key) while one is open.
 Its Aa tab is `scrollControls()`: Speed, Go on to the next clip and Keep
