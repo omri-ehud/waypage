@@ -18,6 +18,30 @@ Moved here from TODO.md (11 Oct 2026), which now lists only open work.
 
 ## Entries
 
+**Auto-scroll for comics (1.50.0).** A comic has no text, so Narrate's
+button became Auto-scroll (`#readerScroll`, same S key) while one is open.
+Its Aa tab is `scrollControls()`: Speed, Go on to the next clip and Keep
+the screen on, the last two being Narrate's own keys, so a switch
+set in either place follows in the other. Speed has its own key
+(`waypage.scrollRate`, 0.5x to 3x of 60 px a second; the 60 is a guess to
+tune on a phone), so a quick manga doesn't speed up the voice. The loop
+lives in reader.js (`glide`): a touch holds it, lifting resumes, and the
+bottom ends it (then the next chapter starts if Go on is on, carried by
+`glide.carry` for 15 seconds). It stops on leaving the clip or the app
+going to the background. Checked in the browser; the phone's wake lock and
+the feel of the speed weren't.
+
+**Comics are guessed now, carefully (1.49.0).** save.js's old comment said
+a comic "is chosen, never guessed". readArticle now tries comicGroup
+(four panels at least, most of all the page's pictures) when Readability
+finds under 1200 characters of article, or none. A long article with many
+pictures stays an article, and a page with a few pictures finds no group.
+The wrong guess costs a clip of pictures instead of text, so More has
+"Save as comic" to redo a clip by hand (and "Update from the site" keeps
+a comic a comic, as before). Checked in the browser with `given` pages
+(6 panels: comic; 6 panels and long text: article; 2 panels: no); the
+live fetch and saving on a phone weren't run.
+
 - **A deck is redrawn, not converted (1.47.0).** Android has no PowerPoint
   renderer, Apache POI would add about 20 MB, and a server is ruled out, so
   `src/pptx.js` reads the zip's XML itself and draws each slide on a

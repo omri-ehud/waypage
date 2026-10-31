@@ -1232,6 +1232,49 @@
     }, { passive: false });
   }
 
+  // Auto-scroll for an image chapter (1.50.0): glide(v, onEnd) moves the
+  // page v pixels a second, glide(0) stops it. A finger on the page holds it
+  // (to look back at a panel) and lifting lets it go on; onEnd() is told
+  // once the bottom is reached, and the glide is over.
+  let glideV = 0, glideEnd = null, glideRaf = 0, glideAt = 0, glideRest = 0, touching = 0;
+  function glide(v, onEnd) {
+    glideV = v > 0 && doc ? v : 0;
+    glideEnd = glideV ? onEnd || null : null;
+    cancelAnimationFrame(glideRaf);
+    glideRaf = 0;
+    glideRest = 0;
+    if (!glideV) return;
+    glideAt = performance.now();
+    const step = (now) => {
+      glideRaf = 0;
+      if (!glideV || !doc || !frame) return;
+      const dt = Math.min(0.25, (now - glideAt) / 1000);
+      glideAt = now;
+      const w = frame.contentWindow;
+      if (!touching && !pinch) {
+        glideRest += glideV * dt;
+        const whole = Math.floor(glideRest);
+        if (whole) { glideRest -= whole; w.scrollBy(0, whole); }
+        if (w.scrollY + w.innerHeight >= doc.documentElement.scrollHeight - 2) {
+          const done = glideEnd;
+          glideV = 0;
+          glideEnd = null;
+          if (done) done();
+          return;
+        }
+      }
+      glideRaf = requestAnimationFrame(step);
+    };
+    glideRaf = requestAnimationFrame(step);
+  }
+  function glideInput() {
+    touching = 0;
+    const down = (e) => { touching = e.touches.length; };
+    doc.addEventListener("touchstart", down, { passive: true });
+    doc.addEventListener("touchend", down, { passive: true });
+    doc.addEventListener("touchcancel", () => { touching = 0; }, { passive: true });
+  }
+
   // Brightness from the left edge (1.10.0): a touch that starts in the
   // left part of the page and goes up or down is the brightness, not a
   // scroll. onEdge: { start(), move(d) with d the change, -1 to 1, end() }.
@@ -1475,6 +1518,7 @@
         chunkUp();
         pagedInput();
         zoomInput();
+        glideInput();
         edgeInput();
         textPinchInput();
         // Keys pressed in the page that it doesn't use itself go to the
@@ -1559,6 +1603,7 @@
   }
 
   function close() {
+    glide(0);
     settle();
     tell = null;
     if (frame) { frame.onload = null; frame.srcdoc = ""; }
@@ -1613,5 +1658,5 @@
       return line;
     }));
   }
-  C.reader = { pdfDarkFilter, setEnd, set tapPictures(v) { onTapOnly = !!v; }, open, placed: () => placed, touched: () => touched, settle, close, find, findGo, clearFind, position, spot, jump, setPaged, turn, get paged() { return isPaged(); }, pageInfo, screenShare, headings, section, parts, skimTo, jumpTo, readable, readableIn, firstShown, spotIn, light, following, selectionSpot, clearSelection, selectionText, selectionMark, selectionMarks, paintMarks, toMark, translatable, paintTranslation, links, spotWords, applyTheme, applyConnection, srcdoc, CSP, setSpread, refit: applyTop, images, imageInfo, printedPages, printedNow, toPrinted };
+  C.reader = { pdfDarkFilter, setEnd, set tapPictures(v) { onTapOnly = !!v; }, open, placed: () => placed, touched: () => touched, settle, close, find, findGo, clearFind, position, spot, jump, setPaged, turn, get paged() { return isPaged(); }, pageInfo, screenShare, headings, section, parts, skimTo, jumpTo, readable, readableIn, firstShown, spotIn, light, following, selectionSpot, clearSelection, selectionText, selectionMark, selectionMarks, paintMarks, toMark, translatable, paintTranslation, links, spotWords, applyTheme, applyConnection, srcdoc, CSP, setSpread, refit: applyTop, images, imageInfo, printedPages, printedNow, toPrinted, glide };
 })();

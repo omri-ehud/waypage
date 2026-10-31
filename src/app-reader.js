@@ -178,7 +178,7 @@ let waiting = null;
 function readerWait(p, fromHistory) {
   waiting = p.id;
   const swap = state.open && $("readerView").dataset.pane && !$("readerView").dataset.leaving;
-  if (state.open) { closeSheet(true); hideReadHere(); brightClose(); closeFind(true); state.open = null; volumeWatch(); }
+  if (state.open) { closeSheet(true); hideReadHere(); brightClose(); closeFind(true); stopGlide(); state.open = null; volumeWatch(); }
   C.reader.close();
   C.files.closeHeld();
   $("readerView").classList.add("waiting");
@@ -347,9 +347,13 @@ function show(p, html) {
   $("readProgress").dir = $("skimTrack").dir = p.dir || "ltr";
   $("readerContents").hidden = true;
   $("readerTranslate").hidden = true;
+  // A comic has no text to narrate: its button is Auto-scroll (1.50.0).
+  stopGlide();
+  $("readerAloud").hidden = !speech.available || !!p.comic;
+  $("readerScroll").hidden = !p.comic;
   $("readerNow").textContent = "Contents";
   $("readerContents").setAttribute("aria-label", "Contents");
-  $("readerFolder").hidden = !(p.folder && !p.preview && folderPages(p.folder).length > 1);
+  $("readerFolder").hidden =!(p.folder && !p.preview && folderPages(p.folder).length > 1);
   $("readerView").classList.remove("bar-away");
   jumpFrom = null;
   $("jumpBack").hidden = true;
@@ -391,6 +395,9 @@ function show(p, html) {
     // Reading aloud carries on across clips (1.4.0): its light and
     // player show again when its clip is the one open.
     setAloud(aloud.state, aloud.index);
+    // Auto-scroll went on from the chapter before (1.50.0).
+    if (glide.carry && Date.now() - glide.carry < 15000 && state.open === p && p.comic) startGlide();
+    glide.carry = 0;
     if (aloudAuto === "here") { aloudAuto = false; C.reader.placed().then(() => { if (state.open === p) startAloud(); }); }
     else if (aloudAuto) { aloudAuto = false; startAloud(0); }
   });
@@ -1027,6 +1034,7 @@ function closeReader() {
   const player = $("aloudPlay");
   const from = aloudHere() && !$("aloudPlayer").hidden ? player.getBoundingClientRect() : null;
   if (from) player.style.visibility = "hidden";
+  stopGlide();
   state.open = null;
   paintPdfDark();
   volumeWatch();
@@ -1060,6 +1068,46 @@ const aloudOn = () => aloud.state === "playing" || aloud.state === "paused";
 const aloudHere = () => (aloudOn() || aloud.state === "ended") && !!state.open && state.open.id === aloud.key;
 const aloudPage = () => state.pages.find((x) => x.id === aloud.key) || null;
 let aloudAuto = false;
+
+// Auto-scroll for a comic (1.50.0), in Narrate's place: the page moves by
+// itself at Speed (its own, kept apart from the voice's) and, with Go on to
+// the next clip, the next chapter starts at the end. Keep the screen on is
+// Narrate's switch too. A finger on the page holds it (C.reader.glide).
+const SCROLL_PX = 60;
+const glide = { on: false, carry: 0 };
+const scrollRate = () => clamp(Number(load(SCROLL_RATE_KEY, 1)) || 1, RATE_MIN, RATE_MAX);
+function paintGlide() {
+  const b = $("readerScroll"), label = glide.on ? "Stop auto-scrolling" : "Auto-scroll";
+  b.setAttribute("aria-pressed", String(glide.on));
+  b.setAttribute("aria-label", label);
+  b.title = label + " (S)";
+}
+function startGlide() {
+  if (!state.open || !state.open.comic) return;
+  glide.on = true;
+  paintGlide();
+  keepAwake();
+  $("readerView").classList.add("bar-away");
+  closeSkim();
+  C.reader.glide(SCROLL_PX * scrollRate(), glideEnded);
+}
+function stopGlide() {
+  if (!glide.on) return;
+  glide.on = false;
+  C.reader.glide(0);
+  paintGlide();
+  keepAwake();
+}
+// At the bottom: on to the next chapter when asked, else it stops.
+function glideEnded() {
+  const p = state.open, link = p && load(GO_ON_KEY, false) && endLink(p);
+  glide.on = false;
+  paintGlide();
+  keepAwake();
+  if (!link) return;
+  setTimeout(() => { if (state.open === p && !glide.on) { glide.carry = Date.now(); link.go(); } }, 800);
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) stopGlide(); });
 // Opens a clip and reads it aloud from where it was left (1.25.0).
 function aloudFrom(id) {
   if (aloud.key === id && aloud.state === "playing") { if (!state.open || state.open.id !== id) openPage(id); return; }
@@ -1597,7 +1645,7 @@ function moveAloud(d) {
 
 // With "Keep the screen on" (1.24.0), only while the voice is speaking:
 // paused or done, the phone dims as it would.
-function keepAwake() { speech.keepScreen(aloud.state === "playing" && !!load(AWAKE_KEY, false)); }
+function keepAwake() { speech.keepScreen((aloud.state === "playing" || glide.on) && !!load(AWAKE_KEY, false)); }
 
 // Picture in picture (1.25.0): while reading aloud, going home leaves a
 // small window with the clip's name, the paragraph being read and the
@@ -1844,6 +1892,7 @@ document.addEventListener("visibilitychange", async () => {
 
 $("readerAloud").hidden = !speech.available;
 $("readerAloud").addEventListener("click", () => (aloudOn() && aloudHere() ? stopAloud() : startAloud()));
+$("readerScroll").addEventListener("click", () => (glide.on ? stopGlide() : startGlide()));
 $("aloudPlay").addEventListener("click", () => {
   if (aloud.state === "playing") { setAloud("paused", aloud.index); speech.pause(); }
   else { setAloud("playing", aloud.index); speech.resume(); }
@@ -1942,18 +1991,7 @@ function aloudControls() {
     // Applied when the thumb is let go: a phone's voice restarts its sentence on each change.
     onchange: (e) => { const v = Number(e.target.value); store(RATE_KEY, v); if (aloud.state !== "stopped") speech.rate(v); } });
   speed.value = rate;
-  const check = (key, text, note, restart = true, on = false) => {
-    const input = el("input", { class: "switch", type: "checkbox", role: "switch", checked: !!load(key, on),
-      onchange: () => {
-        store(key, input.checked);
-        if (key === GO_ON_KEY) queueNext();
-        if (key === AWAKE_KEY) keepAwake();
-        if (key === PIP_KEY) floatOut();
-        if (restart && aloud.state !== "stopped" && state.open && aloud.key === state.open.id) startAloud(blockAt(aloud.index));
-      } });
-    return el("label", { class: "rc-row switch-row" },
-      el("span", { class: "choice-text" }, el("span", { class: "rc-label" }, text), el("span", { class: "choice-note" }, note)), input);
-  };
+  const check = switchRow;
   return el("div", { class: "aloud-controls" },
     engineSlot,
     voiceRow,
@@ -1970,6 +2008,40 @@ function aloudControls() {
     note);
 }
 const rateText = (v) => (Math.round(v * 10) / 10) + "×";
+function switchRow(key, text, note, restart = true, on = false) {
+  const input = el("input", { class: "switch", type: "checkbox", role: "switch", checked: !!load(key, on),
+    onchange: () => {
+      store(key, input.checked);
+      if (key === GO_ON_KEY) queueNext();
+      if (key === AWAKE_KEY) keepAwake();
+      if (key === PIP_KEY) floatOut();
+      if (restart && aloud.state !== "stopped" && state.open && aloud.key === state.open.id) startAloud(blockAt(aloud.index));
+    } });
+  return el("label", { class: "rc-row switch-row" },
+    el("span", { class: "choice-text" }, el("span", { class: "rc-label" }, text), el("span", { class: "choice-note" }, note)), input);
+}
+// A comic's Narrate tab (1.50.0): only what auto-scroll uses, Speed (its
+// own), Go on to the next clip and Keep the screen on.
+function scrollControls() {
+  const rate = scrollRate();
+  const shown = el("span", { class: "rc-value" }, rateText(rate));
+  const speed = el("input", { class: "range", type: "range", min: RATE_MIN, max: RATE_MAX, step: 0.1, value: rate, "aria-label": "Speed",
+    "aria-valuetext": rateText(rate),
+    oninput: (e) => {
+      const v = Number(e.target.value);
+      shown.textContent = rateText(v);
+      e.target.setAttribute("aria-valuetext", rateText(v));
+      store(SCROLL_RATE_KEY, v);
+      if (glide.on) C.reader.glide(SCROLL_PX * v, glideEnded);
+    } });
+  speed.value = rate;
+  return el("div", { class: "aloud-controls" },
+    el("div", { class: "rc-row" }, el("span", { class: "rc-label" }, "Speed", shown),
+      el("div", { class: "stepper" }, speed)),
+    switchRow(GO_ON_KEY, "Go on to the next clip", "At the end, the next chapter starts scrolling by itself.", false),
+    switchRow(AWAKE_KEY, "Keep the screen on", "While it scrolls, so you can follow along.", false));
+}
+
 
 // The same controls in the Aa sheet and in Settings. A change is applied
 // at once and every copy on screen follows it in place, so focus stays put.
@@ -2113,15 +2185,17 @@ const SHEET_TAB_KEY = "waypage.sheetTab";
 function readerSettings() {
   const box = readingControls(true);
   const parts = [...box.querySelectorAll(".rc-part")];
-  if (speech.available) {
-    const a = aloudControls();
+  // A comic gets Auto-scroll with its three settings in Narrate's place (1.50.0).
+  const comic = !!(state.open && state.open.comic);
+  if (comic || speech.available) {
+    const a = comic ? scrollControls() : aloudControls();
     a.classList.add("rc-part");
     a.dataset.part = "aloud";
-    a.prepend(el("h2", { class: "overline" }, "Narrate"));
+    a.prepend(el("h2", { class: "overline" }, comic ? "Auto-scroll" : "Narrate"));
     box.append(a);
     parts.push(a);
   }
-  const names = { layout: "Layout", text: "Text", aloud: "Narrate" };
+  const names = { layout: "Layout", text: "Text", aloud: comic ? "Auto-scroll" : "Narrate" };
   let tab = load(SHEET_TAB_KEY, "text");
   if (!parts.some((x) => x.dataset.part === tab)) tab = "text";
   const show = (v) => {

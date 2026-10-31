@@ -13,7 +13,7 @@
 // app-cards, app-downloads, app-search, app-draw, app-jobs, app-reader,
 // app-library, app-saving, app-places, app-settings, app-lock, and
 // app-start, which runs last and starts things up.
-const APP_VERSION = "1.48.0";
+const APP_VERSION = "1.50.0";
 window.Waypage.version = APP_VERSION;
 
 const C = window.Waypage;
@@ -65,6 +65,7 @@ const NEW_KEY = "waypage.newChapters";
 const DAILY_KEY = "waypage.checkDaily";
 const EXPORT_KEY = "waypage.exportKind";
 const RATE_KEY = "waypage.aloudRate";
+const SCROLL_RATE_KEY = "waypage.scrollRate";
 const VOICE_KEY = "waypage.aloudVoice";
 const DEVICE_KEY = "waypage.deviceName";
 
