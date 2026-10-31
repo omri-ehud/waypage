@@ -750,7 +750,8 @@ function showSection() {
 // The bar along the bottom fills as the page is read. The top bar slides
 // away on any scroll, up or down, and a tap brings it back; it stays at
 // the top, at the end, and while a sheet is up. Read aloud's own
-// scrolling, following the voice, leaves it as it is.
+// scrolling, following the voice, leaves it as it is; auto-scroll keeps
+// the top bar on (.gliding, 1.50.1) while bar-away moves only the bottom.
 let lastY = 0, readerY = 0;
 function readerScrolled(at, y) {
   readerY = y;
@@ -1087,7 +1088,8 @@ function startGlide() {
   glide.on = true;
   paintGlide();
   keepAwake();
-  $("readerView").classList.add("bar-away");
+  // The top bar stays on while it scrolls (1.50.1), so Stop is always there.
+  $("readerView").classList.add("gliding");
   closeSkim();
   C.reader.glide(SCROLL_PX * scrollRate(), glideEnded);
 }
@@ -1095,6 +1097,7 @@ function stopGlide() {
   if (!glide.on) return;
   glide.on = false;
   C.reader.glide(0);
+  $("readerView").classList.remove("gliding");
   paintGlide();
   keepAwake();
 }
@@ -1102,6 +1105,7 @@ function stopGlide() {
 function glideEnded() {
   const p = state.open, link = p && load(GO_ON_KEY, false) && endLink(p);
   glide.on = false;
+  $("readerView").classList.remove("gliding");
   paintGlide();
   keepAwake();
   if (!link) return;
