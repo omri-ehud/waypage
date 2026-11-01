@@ -166,20 +166,22 @@ Each section below shows the computer (left) and the phone (right).
 
 <p><img src="docs/shots/sync-desktop.jpg" width="74%" alt="Sync on a computer"> <img src="docs/shots/sync-phone.jpg" width="21%" alt="Sync on a phone"></p>
 
-- GitHub sync of clips, places, highlights, feeds and stats through your own private repo, with a token for that repo only.
+- GitHub sync of clips, places, highlights, feeds, newsletters and stats through your own private repo, with a token for that repo only; each device picks which of them it syncs.
 - Resumes after the app closes; on mobile data, sync only places and reading time.
-- Google Drive backups, weekly or on demand, with pause, resume and delete.
-- Back up and restore one file; export clips and collections as EPUB, HTML, PDF or Markdown.
+- Google Drive backups, daily to monthly (on Android even with the app closed) or on demand, with pause, resume and delete; pick clips (or links only), feeds and newsletters. Files read from outside stay out of both.
+- Back up (with Pause and Stop) and restore one file; export clips and collections as EPUB, HTML, PDF or Markdown.
 - Storage: Make room, Make pictures smaller, sizes by collection.
 
 ## Settings and the app
 
 <p><img src="docs/shots/settings-desktop.jpg" width="74%" alt="Settings on a computer"> <img src="docs/shots/settings-phone.jpg" width="21%" alt="Settings on a phone"></p>
 
-- Settings in groups: Appearance, Reading, Library, App lock, Saving, GitHub sync, Google Drive, Storage.
+- Settings in groups: Appearance, Reading, Library, App lock, Saving, GitHub sync, Google Drive, Storage; a search box at the top finds any setting.
+- Every setting is a name and one short line; the longer explanation is behind a ? on its heading. Options are drop-downs, themes a grid of swatches.
+- About has the version, the changelog, and Credits: what Waypage is built with.
 - App lock: passcode, fingerprint or face on Android, erase when forgotten.
 - Home screen widgets on Android and iOS: Keep reading, Feeds, Favourites, Collection, Highlight; app icon shortcuts.
-- The Android app updates itself and shows What's new.
+- The Android app updates itself and shows What's new; About › Preview builds installs a branch's build before it's released, and puts the release back.
 - Report a problem with a local error log.
 - Animations switch; motion zooms and moves, never fades.
 

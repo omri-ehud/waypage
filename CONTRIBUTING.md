@@ -110,6 +110,58 @@ layout mode.
 change is shown or explained to Daniel (a mockup, a screenshot, a short
 write-up) and waits for his OK before it's built.
 
+**A control shows its state, not the way to the other one.** A button
+that reads "Count this section" tells you what it will do and hides
+what is set; "Time left in: Section / Whole" shows the choice. Two
+controls for one thing (a switch and a side) become one row with every
+state in it (Off / Left / Right). (1.48.3 and 1.48.4, Daniel's asks.)
+
+**One setting, one row.** A row is a name on the left and its control
+on the right, in one line: a switch, a two- or three-way segment, or a
+drop-down (`pickRow` in `src/app-settings.js`, with the chosen option's
+few words under the name). Never a label with its control on the line
+below, never a list of radios. Related rows share a section; a screen's
+actions (Import, Edit clips, Back up, Restore) sit together under an
+**Actions** heading, after the settings.
+
+**Explain less.** A row says its name and at most one short line of
+state or scope. A section gets a ? (`section(title, help, ...)`) only
+when the help says something the rows can't: what leaves the device,
+what an action does to your data, where to get files. Appearance and
+Library have none. `test/ui.test.js` ("Settings keeps its ? marks to
+the agreed list") fails when a new ? appears; add a title there only
+when Daniel agreed to the ?. Settings search reads the screens
+themselves, so a new row is found without any extra work.
+
+**Nothing touches.** Sections, cards and a heading's ? keep their gaps
+on every screen, whatever the section is built from
+(`.settings-section` gaps in `src/styles.css`). Check at phone width.
+
+**Animations off means off.** With Settings › Appearance › Animations
+off, nothing moves at all: no easing, and no press stretch, turn or pop
+either (`:root[data-motion="off"]` in `src/styles.css`). A new animation
+gets its off rule in the same change. Motion rules are in DESIGN.md §4;
+a menu or popover leaves quickly, by a short stretch of its arrival, not
+the whole way back.
+
+**Show it before you say it's done.** A visible change gets a phone
+screenshot (every theme when colours are involved; `node tools/shots.js`
+retakes the README's), a recording for motion, and goes to Daniel
+before the release PR. Order and wording in the UI are his calls: build
+what he asked, show it, change it to his word.
+
+**Credits.** Anything vendored or bundled (code, a font) goes under
+`CREDITS.code` or `CREDITS.fonts` in `src/app-settings.js`, shown under
+Settings › About › Credits, with its author and licence, beside its
+licence file in the repo. People aren't listed there; the commit
+history is the record.
+
+**Don't bump the version on a feature branch.** Every branch with an
+open pull request gets a preview build (Settings › About › Preview
+builds), and the release installs back over it only while the two have
+the same version code. The release PR is the one that bumps
+`APP_VERSION`, with `node tools/release.js`.
+
 **"Add to TODO" means plan it, not build it.** It goes into TODO.md with
 enough detail for someone else to pick it up.
 
@@ -187,8 +239,10 @@ secrets, so it can't sign or publish anything.
   `main` as it is; the service worker paints from cache and fetches the
   new files for the next launch), version bump or not.
 - `.github/workflows/android.yml` and `ios.yml` build on every push to
-  `main` and to `claude/**` branches. Pushes that only touch `**.md`,
-  `test/**` or `.claude/**` don't run them.
+  any branch. Pushes that only touch `**.md`, `test/**` or `.claude/**`
+  don't run them. A branch with an open pull request gets its build on
+  the pre-release `preview-<branch>`, which the app's Preview builds
+  screen lists; it goes away with the branch.
 - On `main`, when `APP_VERSION` has no release yet and the signing secrets
   are set, the Android workflow publishes the release `app-v<version>`
   with `Waypage.apk`, and the iOS workflow attaches an unsigned

@@ -657,10 +657,13 @@ function zipOf(files) {
       await until(q, () => Waypage.reader.section() === "Chapter 6: Turbulence");
       await q.locator("#skimPrev").click();
       await until(q, () => Waypage.reader.section() === "Chapter 5: Dinner");
-      // The minutes count switches from the bar.
-      await q.locator("#skimLeft").click();
+      // The minutes count switches from Reading › Layout (Time left in).
+      await q.evaluate(() => toggleSheet("reading"));
+      await q.locator('#readingSheet .sheet-tabs .seg-item:has(input[value="layout"])').click();
+      await q.locator('#readingSheet .seg-item:has(input[name$="-leftIn"][value="part"])').click();
+      await q.evaluate(() => toggleSheet("reading"));
       assert.match(await q.locator("#readSection").innerText(), /min left in section/);
-      await q.locator("#readSection").click();
+      // Opening the sheet closed the skim.
       await q.locator("#skimBar").waitFor({ state: "hidden" });
       assert.strictEqual(await q.locator("#jumpBack").isVisible(), true, "no way back");
       await q.waitForTimeout(700);
@@ -914,7 +917,9 @@ function zipOf(files) {
         openSettings();
         openSection("notifications");
         await new Promise((r) => setTimeout(r, 300));
-        document.querySelector('#sectionBody input[value="together"]').click();
+        document.querySelector("#sectionBody .pick-row .dropdown-btn").click();
+        await new Promise((r) => setTimeout(r, 300));
+        [...document.querySelectorAll("#sectionBody .dropdown-item")].find((b) => b.textContent.includes("All together")).click();
         await new Promise((r) => setTimeout(r, 1200));
         [...document.querySelectorAll("#sectionBody .row")].find((r) => r.textContent.includes("Example News")).querySelector("input").click();
         await new Promise((r) => setTimeout(r, 1200));
@@ -1145,7 +1150,31 @@ function zipOf(files) {
       await go.waitFor();
       assert.strictEqual(await go.isDisabled(), false);
       assert.ok(/1 clip you've finished/.test(await go.innerText()));
-      assert.strictEqual(await q.locator(".room-big .row").count(), 1);
+      assert.strictEqual(await q.locator(".room-big").count(), 0);
+      assert.deepStrictEqual(q.errors, [], q.errors.join(" | "));
+      await q.context().close();
+    });
+
+    await test("Back up the library pauses, stops, then runs to a file (1.47.0)", async () => {
+      const q = await page(browser, 390);
+      await q.evaluate(async () => {
+        const pages = Array.from({ length: 20 }, (_, i) => ({ id: "b" + i, url: "https://example.org/" + i, title: "Clip " + i, site: "example.org", savedAt: 1000 + i, minutes: 1, mode: "previews", bytes: 1000 }));
+        await window.Waypage.store.writeIndex(pages);
+      });
+      await q.reload();
+      await q.click("#settingsBtn");
+      await q.locator(".nav-row", { hasText: "Storage" }).click();
+      await q.locator("#backupRow").waitFor();
+      await q.evaluate(() => { const o = C.backup.exportLibrary; C.backup.exportLibrary = (pg, on, f, gate) => o(pg, on, f, async () => { await new Promise((r) => setTimeout(r, 50)); return gate(); }); });
+      await q.click("#backupRow");
+      await q.click("#backupRow .btn-small");
+      await q.waitForFunction(() => /^Paused/.test($("backupStatus").textContent));
+      await q.click("#backupRow .danger");
+      await q.waitForFunction(() => $("backupRow").tagName === "BUTTON");
+      const got = q.waitForEvent("download");
+      await q.click("#backupRow");
+      assert.ok(/^waypage-backup-.*\.zip$/.test((await got).suggestedFilename()));
+      assert.strictEqual(await q.locator("#backupSection .overline").textContent(), "Actions");
       assert.deepStrictEqual(q.errors, [], q.errors.join(" | "));
       await q.context().close();
     });
@@ -1184,7 +1213,8 @@ function zipOf(files) {
       await until(q, async () => /~~whole~~/.test(await window.Waypage.store.readPage("ed1")));
       // Titles, in one collection only.
       await q.locator(".seg-item", { hasText: "Titles" }).click();
-      await q.locator("label.choice", { hasText: "Collections" }).click();
+      await q.locator(".pick-row .dropdown-btn").click();
+      await q.locator(".dropdown-item", { hasText: "Collections" }).click();
       await q.locator(".edit-folders label.row", { hasText: "Notes" }).locator("input").click();
       await q.fill("#editFind", "Clip");
       await q.fill("#editPut", "Note");
@@ -1344,6 +1374,47 @@ function zipOf(files) {
         return { ch1: [p("chap1").finished, p("chap1").at, p("chap1").spot || ""], ch2: p("chap2").at, next: continuePage() && continuePage().id, text: (await window.Waypage.store.readPage("chap1")).includes("Text of chap1") };
       });
       assert.deepStrictEqual(got, { ch1: [true, 1, ""], ch2: 0.4, next: "chap2", text: true }, JSON.stringify(got));
+      await q.context().close();
+    });
+
+    await test("a part turned off in What this device syncs is neither sent nor taken (1.47.0)", async () => {
+      const q = await page(browser, 390);
+      await q.evaluate(async () => {
+        localStorage.setItem("waypage.sync", JSON.stringify({ owner: "me", repo: "waypage-data", branch: "main", token: "t", what: { clips: false, newsletters: false } }));
+        const c = (id, more) => ({ id, url: "https://example.com/" + id, title: "Clip " + id, site: "example.com", savedAt: 100, minutes: 1, mode: "links", at: 0, ...more });
+        await window.Waypage.store.writeIndex([c("mine1")]);
+        await window.Waypage.store.writePage("mine1", "<!doctype html><html><body><p>Mine.</p></body></html>", c("mine1"));
+      });
+      await q.reload();
+      await q.waitForSelector("#saveUrl");
+      const got = await q.evaluate(async () => {
+        const f = (url, more) => ({ url, title: url, mode: "show", images: "previews", folder: "", days: 7, addedAt: 50, checkedAt: 0, error: "", items: [], ...more });
+        feeds.length = 0;
+        feeds.push(f("https://example.com/site.xml"), f("https://kill-the-newsletter.com/feeds/here1.xml"));
+        const c = (id, more) => ({ id, url: "https://example.com/" + id, title: "Clip " + id, site: "example.com", savedAt: 100, minutes: 1, mode: "links", at: 0, ...more });
+        const remote = { format: 1, deleted: {}, files: { rem1: { at: 100, sha: "s1" } }, pages: [c("rem1")], feeds: [f("https://kill-the-newsletter.com/feeds/there1.xml")], feedsGone: {} };
+        const b64 = (t) => btoa(unescape(encodeURIComponent(t)));
+        const puts = [];
+        let wrote = null;
+        window.fetch = async (url, opts = {}) => {
+          const method = opts.method || "GET";
+          const ok = (j) => new Response(JSON.stringify(j), { status: 200 });
+          if (/\/repos\/me\/waypage-data$/.test(url)) return ok({ name: "waypage-data" });
+          if (/contents\/library\.json/.test(url) && method === "GET") return ok({ sha: "lib1", content: b64(JSON.stringify(remote)) });
+          if (/contents\/library\.json/.test(url) && method === "PUT") { wrote = JSON.parse(decodeURIComponent(escape(atob(JSON.parse(opts.body).content)))); return ok({ content: { sha: "lib2" } }); }
+          if (method === "PUT") { if (/contents\/pages\//.test(url)) puts.push(url); return ok({ content: { sha: "x" } }); }
+          return new Response("{}", { status: 404 });
+        };
+        await syncNow(true);
+        return { puts, sentPages: wrote && wrote.pages.map((p) => p.id), sentFeeds: wrote && wrote.feeds.map((x) => x.url).sort(),
+          here: state.pages.map((p) => p.id), feedsHere: feeds.map((x) => x.url).sort() };
+      });
+      assert.deepStrictEqual(got, {
+        puts: [], sentPages: ["rem1"],
+        sentFeeds: ["https://example.com/site.xml", "https://kill-the-newsletter.com/feeds/there1.xml"],
+        here: ["mine1"],
+        feedsHere: ["https://example.com/site.xml", "https://kill-the-newsletter.com/feeds/here1.xml"],
+      }, JSON.stringify(got));
       await q.context().close();
     });
 
@@ -2093,6 +2164,29 @@ function zipOf(files) {
       await face.click();
       await q.locator(".dropdown-item", { hasText: "New collection" }).click();
       await until(q, () => state.pages[0].folder === "Google Drive" && watches()[0].into === "Google Drive");
+      assert.deepStrictEqual(q.errors, [], q.errors.join(" | "));
+      await q.context().close();
+    });
+
+    // CONTRIBUTING "Explain less": a ? only where Daniel agreed to one.
+    await test("Settings keeps its ? marks to the agreed list (1.48.2)", async () => {
+      const q = await page(browser, 390);
+      const agreed = ["Your fonts", "Dictionaries", "Before you go offline", "Save from your browser", "Sync with GitHub",
+        "Already syncing on another device?", "Back up to Google Drive", "Backups", "What goes in", "Restore", "Account", "Feeds", "Newsletters",
+        "This browser", "Where your library is", "Actions", "Branches", "The report", "Lock"];
+      const found = await q.evaluate(async () => {
+        openSettings();
+        const out = [];
+        for (const k of Object.keys(SECTIONS)) {
+          state.section = null;
+          openSection(k);
+          await new Promise((r) => setTimeout(r, 250));
+          out.push(...[...document.querySelectorAll("#sectionBody .section-top .overline")].map((h) => k + " › " + h.textContent.trim()));
+        }
+        return out;
+      });
+      const extra = found.filter((t) => !agreed.includes(t.split(" › ")[1]));
+      assert.deepStrictEqual(extra, [], "a ? that wasn't agreed: " + extra.join(", "));
       assert.deepStrictEqual(q.errors, [], q.errors.join(" | "));
       await q.context().close();
     });
