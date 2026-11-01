@@ -445,7 +445,7 @@ function setBrightSide(side, dx = 0) {
   store(BRIGHT_SIDE_KEY, side);
   box.style.transition = "none";
   box.classList.toggle("right", side === "right");
-  document.querySelectorAll('input[name$="-brightSide"]').forEach((i) => { i.checked = i.value === side; });
+  if (brightOn()) document.querySelectorAll('input[name$="-brightSide"]').forEach((i) => { i.checked = i.value === side; });
   const now = box.getBoundingClientRect().left;
   box.style.translate = (was + dx - now) + "px 0";
   void box.offsetWidth;
@@ -575,24 +575,21 @@ const brightEdge = {
   $("brightAuto").addEventListener("click", brightAuto);
   addEventListener("resize", () => { if (state.open && !$("bright").hidden) placeBright(); });
 })();
+// One row (1.48.3, was a switch and a side): Off, or the slider's side.
+// Off keeps the chosen side for when it's back.
 function brightSwitch(id) {
   if (!C.platform.brightness.available) return null;
-  return [el("label", { class: "rc-row switch-row" },
-    el("span", { class: "choice-text" }, el("span", { class: "rc-label" }, "Brightness along the edge"),
-      el("span", { class: "choice-note" }, "Swipe up or down along the slider's side while reading")),
-    el("input", { class: "switch", type: "checkbox", role: "switch", "data-pref": "brightSwipe", checked: brightOn(),
-      onchange: (e) => {
-        store(BRIGHT_SWIPE_KEY, e.target.checked);
-        document.querySelectorAll('input[data-pref="brightSwipe"]').forEach((i) => { i.checked = e.target.checked; });
-        if (!state.open) return;
-        if (e.target.checked) brightOpen();
-        else { brightClose(); $("bright").hidden = true; }
-      } })),
-  // Also by holding the slider half a second and swiping it across.
-  el("div", { class: "rc-row" }, el("span", { class: "rc-label" }, "Brightness slider"),
-    seg(id + "-brightSide", "Brightness slider side", [
-      { value: "left", label: "Left" }, { value: "right", label: "Right" },
-    ], brightSide(), (v) => { setBrightSide(v); placeBright(); }))];
+  return [el("div", { class: "rc-row" }, el("span", { class: "rc-label" }, "Brightness slider"),
+    seg(id + "-brightSide", "Brightness slider", [
+      { value: "off", label: "Off" }, { value: "left", label: "Left" }, { value: "right", label: "Right" },
+    ], brightOn() ? brightSide() : "off", (v) => {
+      store(BRIGHT_SWIPE_KEY, v !== "off");
+      if (v !== "off") { setBrightSide(v); placeBright(); }
+      document.querySelectorAll('input[name$="-brightSide"]').forEach((i) => { i.checked = i.value === v; });
+      if (!state.open) return;
+      if (v !== "off") brightOpen();
+      else { brightClose(); $("bright").hidden = true; }
+    }))];
 }
 
 // Text size from a pinch on a clip's words (1.16.0); pictures and a
@@ -2092,6 +2089,11 @@ function readingControls(withTheme) {
       { value: "narrow", label: "Narrow" }, { value: "normal", label: "Normal" }, { value: "wide", label: "Wide" },
     ], r.margins, (v) => setReading({ margins: v }))),
     ...(brightSwitch(id) || []),
+    // Under Layout since 1.47.0: it adds a line to the page, not to the type.
+    row("Time left in", seg(id + "-leftIn", "Time left in", [
+      { value: "part", label: "Section" }, { value: "clip", label: "Whole" },
+    ], leftIn(state.open), setLeftIn)),
+    spentSwitch(),
     // Big screens (1.5.0): two pages side by side, and the contents
     // beside the text.
     wide.matches ? stack("Pages on a wide window", seg(id + "-spread", "Pages on a wide window", [
@@ -2113,6 +2115,7 @@ function readingControls(withTheme) {
     row("Hebrew", fontPick("hebrew", "Hebrew font",
       HEBREW.map((f) => ({ value: f.value, label: f.label,
         sample: f.family ? el("span", { class: "seg-sample", lang: "he", dir: "rtl", style: "font-family: " + f.family, "aria-hidden": "true" }, "עברית") : null })))),
+    row("Alignment", fontPick("align", "Alignment", ALIGNS)),
     row("Text size", el("div", { class: "stepper" },
       el("button", { class: "step-btn small", type: "button", "data-step": "-1", "aria-label": "Smaller text", onclick: () => nudge(-1) }, "A"),
       slider("Text size", SIZE_MIN, SIZE_MAX, 1, (v) => setReading({ size: v }), "size"),
@@ -2121,14 +2124,12 @@ function readingControls(withTheme) {
     // screen. Fonts made only as regular and bold go in one step.
     row("Weight", el("div", { class: "stepper" },
       slider("Text weight", SPACES.weight.min, SPACES.weight.max, SPACES.weight.step, (v) => setReading({ weight: v }), "weight")), "weight"),
-    pinchSwitch(),
-    spentSwitch(),
-    row("Alignment", fontPick("align", "Alignment", ALIGNS)),
     el("label", { class: "rc-row switch-row" },
       el("span", { class: "choice-text" }, el("span", { class: "rc-label" }, "Hyphenate"),
         el("span", { class: "choice-note" }, "Breaks long words at the line's end, in the clip's language")),
       el("input", { class: "switch", type: "checkbox", role: "switch", "data-pref": "hyphens", checked: r.hyphens,
         onchange: (e) => setReading({ hyphens: e.target.checked }) })),
+    pinchSwitch(),
     // Spacing (1.19.0), headed on its own so the labels stay one word.
     el("h2", { class: "overline rc-sub" }, "Spacing"),
     row("Lines", el("div", { class: "stepper" },
@@ -2596,6 +2597,12 @@ function saveLinked(urls, folder) {
   toast("They save when you're back online. They're in Downloads.");
 }
 
+// Where Back would take you, as a mark on the skim track (1.48.4).
+function paintFrom() {
+  const mark = $("skimFrom");
+  mark.hidden = !jumpFrom;
+  if (jumpFrom) mark.style.insetInlineStart = (jumpFrom.at * 100).toFixed(2) + "%";
+}
 function jumped(spot) {
   if (!jumpFrom) jumpFrom = { spot, at: C.reader.position() };
   $("jumpBack").hidden = false;
@@ -2606,6 +2613,7 @@ $("jumpBack").addEventListener("click", () => {
   closeSkim();
   jumpFrom = null;
   $("jumpBack").hidden = true;
+  paintFrom();
   if (from && state.open) { C.reader.jump(from.at, from.spot, true); voiceHere(1000); }
 });
 
@@ -2701,14 +2709,12 @@ function skimShow(at) {
 function skimPaint(at) {
   $("skimFill").style.transform = "scaleX(" + at + ")";
   $("skimKnob").style.insetInlineStart = (at * 100).toFixed(2) + "%";
+  paintFrom();
   const [a, b] = skimText(at);
   $("skimPart").textContent = b ? a : "";
   const track = $("skimTrack");
   track.setAttribute("aria-valuenow", String(Math.round(at * 100)));
   track.setAttribute("aria-valuetext", skimText(at).join(", "));
-  const p = state.open, top = C.reader.parts().filter((x) => x.level === 2).length >= 2;
-  $("skimLeft").hidden = !top;
-  if (top) $("skimLeft").textContent = leftIn(p) === "part" ? "Count the whole " + (isBook(p) ? "book" : "clip") : "Count this " + (isBook(p) ? "chapter" : "section");
 }
 // The chapter at `at` and where that is: page 12 of 340, or 42%.
 function skimText(at) {
@@ -2759,7 +2765,6 @@ $("readFoot").querySelector(".read-left").addEventListener("click", (e) => {
 });
 $("skimPrev").addEventListener("click", () => skimPart($("skimTrack").dir === "rtl" ? 1 : -1));
 $("skimNext").addEventListener("click", () => skimPart($("skimTrack").dir === "rtl" ? -1 : 1));
-$("skimLeft").addEventListener("click", () => { toggleLeft(); skimPaint(C.reader.position()); });
 {
   const track = $("skimTrack");
   let down = null;
@@ -2820,15 +2825,15 @@ function partLeft(p, at) {
   const mins = Math.max(1, Math.ceil(clipMinutes(p) * Math.max(0, (next ? next.at : 1) - at)));
   return mins + " min left in " + (isBook(p) ? "chapter" : "section");
 }
-function toggleLeft() {
-  const p = state.open;
-  if (!p || C.reader.parts().filter((x) => x.level === 2).length < 2) return;
-  const all = load(LEFT_KEY, {});
-  const to = leftIn(p) === "part" ? "clip" : "part";
-  all[isBook(p) ? "book" : "clip"] = to;
-  store(LEFT_KEY, all);
+// Settings › Reading › Layout "Time left in" (1.48.4; a button on the
+// skim bar before). One choice for books and clips alike.
+function setLeftIn(v) {
+  store(LEFT_KEY, { book: v, clip: v });
+  document.querySelectorAll('input[name$="-leftIn"]').forEach((i) => { i.checked = i.value === v; });
+  if (!state.open) return;
   $("readSection").dataset.at = "";
   readerFoot(C.reader.position());
+  if (skimUp()) skimPaint(C.reader.position());
 }
 // A tick on the line where each chapter starts, while they fit apart.
 let ticksOf = null;

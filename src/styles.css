@@ -512,7 +512,9 @@ html.native .screen-bar { padding-top: calc(var(--s-2) + env(safe-area-inset-top
 }
 .screen-body > * { max-width: 40rem; margin-left: auto; margin-right: auto; }
 
-.settings-section + .settings-section { margin-top: var(--s-6); }
+:is(.settings-section, .reading-controls.split) + .settings-section { margin-top: var(--s-6); }
+/* Two cards in one section (a list and its action, say) stand apart (1.48.1). */
+.settings-section > .group + .group, .settings-section > :is(.footnote, .warn-note, textarea, .report-field) + .group { margin-top: var(--s-3); }
 .overline {
   margin: 0 0 var(--s-2) var(--s-1);
   font: 600 var(--fs-meta)/var(--lh-meta) var(--sans);
@@ -918,7 +920,7 @@ html.native .find-bar { padding-top: calc(var(--s-2) + env(safe-area-inset-top))
   animation: skim-up var(--spring-control-ms, 300ms) var(--spring-control-edge, ease-out);
 }
 .skim-bar > * { max-width: 34rem; margin-inline: auto; }
-.skim-bar[hidden], .skim-left[hidden], .skim-row .icon-btn[hidden] { display: none; }
+.skim-bar[hidden], .skim-row .icon-btn[hidden] { display: none; }
 .reader.bar-away .skim-bar { display: none; }
 .skim-head { display: flex; align-items: baseline; gap: var(--s-3); padding: 0 var(--s-2); }
 .skim-part { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-label); font-weight: 600; }
@@ -933,16 +935,18 @@ html.native .find-bar { padding-top: calc(var(--s-2) + env(safe-area-inset-top))
 .skim-fill { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; }
 .skim-track[dir="rtl"] .skim-fill { transform-origin: right; }
 .skim-ticks { position: absolute; inset: 0; }
+/* Where Back goes: a short line through the rail (1.48.4). */
+.skim-from {
+  position: absolute; top: 50%; width: 14px; height: 14px; margin-top: -7px; margin-inline-start: -7px;
+  border-radius: var(--r-full); border: 2px solid var(--ink); background: var(--surface); box-shadow: 0 0 0 2px var(--surface);
+}
+.skim-from[hidden] { display: none; }
 .skim-knob {
   position: absolute; top: 50%; width: 22px; height: 22px; margin-top: -11px; margin-inline-start: -11px;
   border-radius: var(--r-full); background: var(--accent); box-shadow: 0 0 0 3px var(--surface);
   transition: scale var(--spring-control-ms, 300ms) var(--spring-control, ease-out);
 }
 .reader.skimming .skim-knob { scale: 1.2; }
-.skim-left {
-  display: block; min-height: var(--tap); padding: 0 var(--s-3);
-  border: 0; background: none; color: var(--accent); font: 600 var(--fs-meta)/1 var(--sans);
-}
 @keyframes skim-up { from { transform: translateY(100%); } }
 :root[data-motion="off"] .skim-bar { animation: none; }
 @media (prefers-reduced-motion: reduce) {
@@ -1106,6 +1110,10 @@ html.native .find-bar { padding-top: calc(var(--s-2) + env(safe-area-inset-top))
 .rc-part[hidden] { display: none; }
 /* .rc-row is display: flex, which beats the browser's [hidden] (1.46.1). */
 .rc-row[hidden] { display: none; }
+
+/* Settings > Reading (1.48.2): the one box split into Layout and Text sections; the section heads replace the parts' own. */
+.reading-controls.split { display: contents; }
+.reading-controls.split .rc-part > .overline:not(.rc-sub) { display: none; }
 .rc-part > .overline { margin: var(--s-2) 0 calc(-1 * var(--s-1)) var(--s-1); }
 .reader-settings { display: flex; flex-direction: column; gap: var(--s-4); }
 .reader-settings .rc-part > .overline { display: none; }
@@ -1225,7 +1233,13 @@ html { -webkit-tap-highlight-color: transparent; }
    the next. Spinners keep turning; they say something is happening. */
 :root[data-motion="off"] *, :root[data-motion="off"] *::before, :root[data-motion="off"] *::after { transition: none !important; }
 :root[data-motion="off"] :is(.card, .tile, .tile-btn, .btn-primary, .btn-small, .btn-quiet, .icon-btn, .step-btn, .chip, .sheet-row,
-.select-act, .btn-text, .dropdown-btn):active { transform: none; }
+.select-act, .btn-text, .dropdown-btn, .help-btn):active { transform: none; }
+/* Nor the press stretch of a switch's knob, the ? turn or a drop-down's pop (1.48.3). */
+:root[data-motion="off"] .switch:active::before { width: 20px; }
+:root[data-motion="off"] .switch:checked:active::before { transform: translateX(20px); }
+:root[data-motion="off"][dir="rtl"] .switch:checked:active::before, :root[data-motion="off"] [dir="rtl"] .switch:checked:active::before { transform: translateX(-20px); }
+:root[data-motion="off"] .help-btn[aria-expanded="true"] { transform: none; }
+:root[data-motion="off"] :is(.dropdown-face.changed, .lock-dots.shake) { animation: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
 }
@@ -1506,6 +1520,46 @@ html { -webkit-tap-highlight-color: transparent; }
 
 /* Settings: a short menu of screens. */
 .settings-menu { display: flex; flex-direction: column; gap: var(--s-5); }
+/* Compact Settings (1.48.0): the search box under the bar, a ? on a
+   section's heading that shows its explanation, and the row a search
+   result lands on lit for a moment. */
+.settings-search { padding: var(--s-3) var(--gutter) 0; }
+.settings-search .search { margin: 0 auto; max-width: 40rem; }
+.settings-search .search input { height: var(--tap); }
+.found-none { margin: var(--s-4) var(--s-1); text-align: start; }
+.section-top { margin-bottom: var(--s-2); }
+.section-top .help-text { margin: var(--s-2) var(--s-1) var(--s-3); }
+.help-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--spring-control-ms, 300ms) var(--spring-control, ease-out); }
+.help-wrap.open { grid-template-rows: 1fr; }
+.help-inner { min-height: 0; overflow: hidden; }
+.help-wrap:not(.open) .help-text { visibility: hidden; }
+.settings-section .section-head { align-items: flex-end; gap: var(--s-2); min-height: 28px; margin: 0 0 var(--s-2); }
+.section-top > .section-head { margin-bottom: 0; }
+.help-btn {
+  flex-shrink: 0; width: 28px; height: 28px; margin: 0 calc(-1 * var(--s-1)) 0 0; padding: 0;
+  border: 1px solid var(--line); border-radius: var(--r-full); background: var(--surface); color: var(--muted);
+  font: 600 13px/1 var(--sans); cursor: pointer;
+}
+.help-btn:hover, .help-btn[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
+.help-btn { transition: transform var(--spring-control-ms, 300ms) var(--spring-control, ease-out), color 120ms linear, border-color 120ms linear; }
+.help-btn:active { transform: scale(0.88); }
+.help-btn[aria-expanded="true"] { transform: rotate(360deg); }
+/* A drop-down's new choice pops into its face; a pressed switch's knob
+   stretches toward where it's going (1.48.0). */
+.dropdown-face.changed { animation: face-pop var(--spring-control-ms, 300ms) var(--spring-control, ease-out); }
+@keyframes face-pop { from { transform: scale(0.8); } to { transform: none; } }
+.switch:active::before { width: 26px; }
+.switch:checked:active::before { transform: translateX(14px); }
+[dir="rtl"] .switch:checked:active::before { transform: translateX(-14px); }
+.help-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.found { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: var(--r-md); }
+.row.found, .choice.found { background: var(--press); }
+.theme-grid .seg-face { padding: var(--s-2) 2px; }
+.pick-row { gap: var(--s-2); padding-inline-end: var(--s-2); }
+.pick-row .row-pick { flex: 0 1 auto; max-width: 58%; }
+.pick-row .row-pick .dropdown-btn { flex: 0 1 auto; max-width: 100%; border: 0; background: transparent; padding: 0 var(--s-2); color: var(--accent); font-weight: 500; }
+.pick-row .row-pick .dropdown-menu { left: auto; right: 0; min-width: 240px; max-width: min(80vw, 360px); }
+.storage-total { margin: 0 0 var(--s-3) var(--s-1); }
 .nav-row .row-value { max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .row-chev { flex-shrink: 0; color: var(--muted); font-size: 22px; line-height: 1; margin-inline-start: calc(-1 * var(--s-1)); }
 .storage-folder .row-chev { transition: transform var(--spring-control-ms, 300ms) var(--spring-control, ease-out); }
@@ -1517,6 +1571,8 @@ html { -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) { .storage-folder .row-chev { transition: none; } }
 .nav-row[aria-current] { background: var(--bg); }
 .storage-total { margin: 0 0 var(--s-1) var(--s-1); font: 700 var(--fs-title)/var(--lh-title) var(--serif); }
+/* Pause and Stop on Back up the library while it runs (1.47.0). */
+.backup-actions { display: flex; gap: var(--s-2); align-items: center; flex: none; }
 .settings-section > .section-lead { margin-bottom: var(--s-5); }
 .drive-done { margin: 0; padding: var(--s-8) var(--s-5); text-align: center; color: var(--ink); font-size: var(--fs-meta); }
 .update-card { border-color: var(--accent); }
@@ -1534,7 +1590,7 @@ html { -webkit-tap-highlight-color: transparent; }
 .switch::before {
   content: ""; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px;
   border-radius: var(--r-full); background: var(--muted);
-  transition: transform var(--spring-control-ms, 300ms) var(--spring-control, ease-out), background-color 120ms linear;
+  transition: transform var(--spring-control-ms, 300ms) var(--spring-control, ease-out), width var(--spring-control-ms, 300ms) var(--spring-control, ease-out), background-color 120ms linear;
 }
 .switch:checked { background: var(--accent); border-color: var(--accent); }
 .switch:checked::before { transform: translateX(20px); background: var(--accent-ink); }
@@ -2359,7 +2415,9 @@ kbd {
   #settingsBack svg { width: 18px; height: 18px; }
   #settingsView .bar-title { padding: 0 var(--s-3); text-align: start; font: 700 var(--fs-screen)/var(--lh-screen) var(--serif); }
   #settingsView .bar-spacer { display: none; }
+  #settingsView .settings-search { width: var(--settings-w); padding: var(--s-3) var(--s-4) 0; }
   #settingsView .screen-body { width: var(--settings-w); padding: var(--s-4) var(--s-4) var(--s-5); }
+  #settingsView .found-list .group { background: transparent; border: 0; border-radius: 0; overflow: visible; }
   #settingsView .screen-body > * { margin: 0; max-width: none; }
   #settingsView { border-inline-end: 0; }
   #settingsView .settings-menu { gap: 0; }

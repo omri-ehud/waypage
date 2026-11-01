@@ -18,6 +18,62 @@ Moved here from TODO.md (11 Oct 2026), which now lists only open work.
 
 ## Entries
 
+**Preview builds are pre-releases, one per branch (1.48.0).** The
+workflow artifact was the first idea: it needs no token either, but it
+is a zip, its link lives a minute, and it is gone after 90 days. A
+pre-release has a plain stable link for the APK, GitHub leaves it out of
+`releases/latest`, so the updater can't offer it by mistake, and the
+app reads the list the same unauthenticated way. Each push deletes and
+remakes it so the tag follows the commit. Going back is possible
+because Android installs an equal version code over an app and refuses
+only a lower one, which is why feature branches don't bump
+`APP_VERSION`. iOS can't install anything from inside an app, so there
+the build's page opens; the web copy is `main` only, so it has no
+previews.
+
+**Settings search reads the screens (1.48.0).** There is no list of
+settings to keep: when a search starts, every Settings screen is built
+once into a detached box and its headings, rows (name and line), option
+groups and help texts are read into the index, which is dropped when
+Settings close. So a row added anywhere is found with no extra work, and
+the words searched are exactly the words shown. The build takes a few
+milliseconds; Storage's per-clip rows and the report log are skipped. A
+result opens the screen and finds its row again by heading and name,
+since a rebuilt screen has new nodes. The help text that's hidden
+behind a ? is searched too, so "OLED" finds Theme.
+
+**Why help hides behind a ? (1.48.0).** Daniel's complaint was text
+everywhere. The Steam Deck shows a setting's description only for the
+one under the cursor; a phone has no hover, so the nearest thing is a
+button on the section's heading that unfolds the explanation. The
+explanation is still there, searchable, one tap away; the screen reads
+as a list of names again. What reports a state stays a visible footnote,
+because hiding a warning or a progress line behind a ? would lose it.
+
+**Drive backups with the app closed (Unreleased, after 1.46.0).** A
+JobService (`DriveBackupJob`) rather than WorkManager, as the feed check
+is, so no new dependency. The job can't run the WebView, so the app hands
+over everything JavaScript decides (which clips, the head files, the
+library's place, the folder id) each time it goes to the background, and
+the job only packs (`LibraryZip`, shared with Back up now) and sends.
+It's held while the app is open so the two never back up at once. A
+job gets about ten minutes: a big library may take several runs, so the
+zip and the resumable session are kept between them (six days, under
+Drive's week). The browser's resumable upload reads the session from the
+upload id Drive exposes when Location isn't, and asks Drive how far it
+got after a pause, since a piece stopped while waiting may have arrived.
+
+**A restore beats an older deletion (1.46.0).** Sync keeps a tombstone
+for 90 days and a restored clip keeps its old id, so restoring a backup
+with sync on brought deleted clips back only until the next sync. A
+clip a restore adds now carries `back` (when), and sync's merge drops any
+tombstone older than it, on every device (each device's own base still
+has the tombstone, so the check runs on both sides). Feeds needed no new
+field: a restored feed is followed again with `addedAt` now, which
+already beats an older unfollow. Files read from outside never go in a
+backup at all (Daniel: a clip from a file is a clip; an outside file
+stays where it is), and older backups' ones are skipped on restore.
+
 **The top bar stays on while auto-scrolling (1.50.1).** 1.50.0 hid the
 bar when auto-scroll started and, worse, readerScrolled() hid it again on
 the first 12 px of any scroll, auto-scroll's own included, so it vanished

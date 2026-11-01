@@ -2,6 +2,145 @@
 
 All notable changes to Carry-on. Newest first.
 
+## [1.51.0] - 2026-11-01
+
+### Changed
+- Brought in Daniel's Waypage 1.46.0 to 1.48.4: compact Settings with
+  search, Google Drive backups with the app closed, Links only backups,
+  GitHub sync switches, preview builds and more. His notes follow, marked
+  with his version numbers. Fork edits kept: dark PDF pages, PowerPoint
+  decks, comics and manga, own Google client.
+
+### Changed (Daniel's 1.48.4)
+- Reader: while skimming, a ring on the bar marks where Back takes you.
+- Settings › Reading › Layout "Time left in": Section or Whole, one
+  choice for clips and books. It was the Count this section button on
+  the skim bar.
+- Settings › Google Drive: Back up by itself is a row like the other
+  picks, its choice at the end, not a drop-down under its name.
+
+### Changed (Daniel's 1.48.3)
+- Settings › Reading › Layout: Brightness is one row, Off / Left /
+  Right, in place of a switch and a side.
+- Settings › Reading › Text: Alignment sits above Text size, Pinch for
+  text size below Hyphenate.
+- Settings › Notifications: feeds and newsletter addresses are two
+  sections.
+- A drop-down menu closes with only a short move back toward its
+  button, not the whole way.
+
+### Fixed (Daniel's 1.48.3)
+- Settings: a section after Reading's Text touched its card.
+- Animations off also stops a switch's press stretch, the ? turn and a
+  drop-down's pop; they changed in steps before.
+
+### Changed (Daniel's 1.48.2)
+- Settings › Reading: Layout and Text are two sections, like Narrate.
+- Settings › Library: Import from another app and Edit clips sit under
+  one Actions heading, like Storage's.
+- Fewer ? in Settings: Theme, Auto uses, Pictures and motion, Layout,
+  Text, Narrate, Library's Layout and Keeping up, Import, Alerts,
+  Saving, GitHub sync's This device and Storage's By collection lost
+  explanations that only repeated their rows. Your fonts keeps its ?,
+  with the file types and where font files can go; This device has a
+  line under it.
+
+### Changed (Daniel's 1.48.1)
+- Credits: no ? on its headings; the licence lines say enough.
+- Two cards in one Settings section no longer touch (About, Preview builds, Google Drive, GitHub sync).
+
+### Removed (Daniel's 1.48.1)
+- Settings › Library › Check all collections now: the library itself checks.
+
+### Added (Daniel's 1.48.0)
+- A search box at the top of Settings. A word or two finds a setting
+  wherever it sits, by its name, its line, its heading or its
+  explanation; a result opens the screen and lights the row up.
+- Settings › About › Credits: the open-source code and fonts Waypage is
+  built with and their licences, and the services it talks to.
+- Settings › About › Preview builds (Android): try a branch before it's
+  released. Every branch with an open pull request has a build; Install
+  puts it over the Waypage you have and keeps your library, and Back to
+  the release puts the released version back. A branch that raised the
+  version number needs an uninstall first, and the row says so. On
+  iPhone the build's page opens instead.
+
+### Changed (Daniel's 1.48.0)
+- Settings say less. Every row is a name and at most one short line, and
+  the longer explanation sits behind a ? on its section's heading, the
+  way the Steam Deck explains a setting only when asked. Saving went from
+  two and a half screens to one.
+- Lists of options are drop-downs in a row (Images, On mobile data, how
+  soon the app locks, where the library is kept, how new posts notify,
+  which clips to edit), and Appearance's ten theme rows are a grid of
+  swatches, two rows tall. Library's layout is a Scroll/Pages-style
+  switch.
+- Saving's picture settings are one group: Images, Make full images
+  smaller, Load pictures only when tapped and On mobile data. GitHub
+  sync's On mobile data sits under What this device syncs.
+- Pressing the ? and a switch answer with motion: the ? dips and turns,
+  a pressed switch's knob stretches toward where it's going, and a
+  drop-down's new choice pops into place.
+
+### Added (Daniel's 1.47.0)
+- Google Drive backs up by itself with Waypage closed, on Android: on
+  Wi-Fi, with the battery not low, when it's due. A quiet notification
+  shows while it packs and sends; one Android stops part way goes on from
+  where Drive got to the next time.
+- Google Drive › What goes in › Links only, like GitHub sync: clips that
+  can be saved again go in as their addresses, and a restore saves them
+  again from their links. Books copied in and newsletter mails still go in
+  whole.
+- GitHub sync › What this device syncs has switches like Google Drive's:
+  Clips (with Clips too or Links only under it), Feeds, Newsletters and
+  Reading stats. A part turned off is neither sent nor taken here, and
+  stays on GitHub as your other devices left it.
+- Back up the library has Pause and Stop while it runs, like Google
+  Drive's backups.
+
+### Changed (Daniel's 1.47.0)
+- Back up by itself is a drop-down.
+- Google Drive backups in a browser go up in 8 MB pieces, so Pause and
+  Resume (or a dropped connection) go on from the last piece instead of
+  starting over, and pack about four times faster (3000 clips: 5.3 s to
+  1.3 s), reading clips fifty at a time.
+- Storage starts with where your library is kept, then its size by
+  collection. Make pictures smaller and Keep only the text of finished
+  clips moved down beside the backup buttons, under a heading now
+  called Actions.
+- Restore or open a file is now just Restore.
+- Import moved from Saving to Library.
+- About: What's new is now Changelog, and the line under Releases and
+  source is gone.
+- Time at the end of a clip moved from Text to Layout, in Settings and
+  in the reader's settings.
+
+### Removed (Daniel's 1.47.0)
+- Storage's Biggest clips list: By collection already shows every clip,
+  biggest first.
+
+### Changed (Daniel's 1.46.0)
+- Google Drive backups leave out files read from outside and watched
+  folders, like GitHub sync: they stay where they are. An older backup's
+  outside files are skipped on restore instead of coming back as text
+  clips. The same goes for Back up the library.
+- Google Drive's What goes in: a file copied in is a clip, so the Files
+  switch is gone and Clips takes them; Newsletters has its own switch
+  (your addresses); every switch says what it actually puts in.
+- GitHub sync has a What syncs list: clips, feeds, newsletters and
+  reading stats, each with what goes, and what doesn't
+  (files read from outside, watched folders, settings).
+- Google Drive backs up by itself as often as you pick: every day,
+  every 3 days, every week (still the default), every 2 weeks or every
+  month, or only when you ask. With backups more often than weekly, Drive
+  also keeps one from a week before the newest three.
+
+### Fixed (Daniel's 1.46.0)
+- Restoring a backup with GitHub sync on no longer loses what it brought
+  back: a clip or feed deleted since the backup was made was deleted
+  again by the next sync. The restore now wins over the older deletion,
+  on every synced device.
+
 ## [1.50.1] - 2026-10-31
 
 ### Fixed
